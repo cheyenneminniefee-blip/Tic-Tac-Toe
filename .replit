@@ -30,7 +30,7 @@ outputType = "webview"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm start"
-waitForPort = 5000
+waitForPort = 8081
 
 [agent]
 stack = "PNPM_WORKSPACE"
