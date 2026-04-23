@@ -1,16 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <main>
-      <h1>It works.</h1>
-      <p>Your Express server is serving this page.</p>
-    </main>
-    <script src="/main.js"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe AI</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Tic Tac Toe AI</h1>
+
+    <div id="auth-container">
+        <h2>Login or Register</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <div class="button-group">
+            <button id="login-btn">Login</button>
+            <button id="register-btn">Register</button>
+        </div>
+        <p id="auth-message"></p>
+    </div>
+
+    <div id="game-container" style="display: none;">
+        <h2>Welcome, <span id="display-username"></span>!</h2>
+        <button id="logout-btn">Logout</button>
+        
+        <div id="board-placeholder" style="margin-top: 20px; border: 1px dashed #ccc; padding: 20px;">
+            Game board will go here in CP03.
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
 </html>
