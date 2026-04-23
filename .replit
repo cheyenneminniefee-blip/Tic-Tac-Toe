@@ -17,8 +17,9 @@ mode = "parallel"
 author = "agent"
 
 [[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
+task = "shell.exec"
+args = "pnpm dev"
+waitForPort = 8081
 
 [[workflows.workflow]]
 name = "Start application"
