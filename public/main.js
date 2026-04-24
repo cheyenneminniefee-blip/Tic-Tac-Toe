@@ -75,5 +75,44 @@ function updateMessage(text, color) {
   authMessage.style.color = color;
 }
 
+// --- CP03 Game Board Logic ---
+
+const cells = document.querySelectorAll('.cell');
+const turnIndicator = document.getElementById('turn-indicator');
+const resetBtn = document.getElementById('reset-btn');
+
+let currentPlayer = 'X';
+let boardState = ['', '', '', '', '', '', '', '', '']; // Represents the 9 cells
+
+// Add a click listener to every cell
+cells.forEach(cell => {
+    cell.addEventListener('click', (e) => {
+        const index = e.target.getAttribute('data-index');
+
+        // Only allow clicking if the cell is empty
+        if (boardState[index] === '') {
+            // 1. Update the state array
+            boardState[index] = currentPlayer;
+
+            // 2. Update the UI
+            e.target.innerText = currentPlayer;
+
+            // 3. Switch turns
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+
+            // 4. Update the turn indicator
+            turnIndicator.innerText = `Player ${currentPlayer}'s Turn`;
+        }
+    });
+});
+
+// Reset the board to play again
+resetBtn.addEventListener('click', () => {
+    currentPlayer = 'X';
+    boardState = ['', '', '', '', '', '', '', '', ''];
+    turnIndicator.innerText = `Player X's Turn`;
+    cells.forEach(cell => cell.innerText = '');
+});
+
 // Initialize
 checkSession();

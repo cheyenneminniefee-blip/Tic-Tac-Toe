@@ -23,9 +23,23 @@
     <div id="game-container" style="display: none;">
         <h2>Welcome, <span id="display-username"></span>!</h2>
         <button id="logout-btn">Logout</button>
-        
-        <div id="board-placeholder" style="margin-top: 20px; border: 1px dashed #ccc; padding: 20px;">
-            Game board will go here in CP03.
+
+        <div id="game-ui" style="margin-top: 20px;">
+            <h3 id="turn-indicator">Player X's Turn</h3>
+
+            <div id="tic-tac-toe-board">
+                <div class="cell" data-index="0"></div>
+                <div class="cell" data-index="1"></div>
+                <div class="cell" data-index="2"></div>
+                <div class="cell" data-index="3"></div>
+                <div class="cell" data-index="4"></div>
+                <div class="cell" data-index="5"></div>
+                <div class="cell" data-index="6"></div>
+                <div class="cell" data-index="7"></div>
+                <div class="cell" data-index="8"></div>
+            </div>
+
+            <button id="reset-btn" style="margin-top: 15px;">Reset Board</button>
         </div>
     </div>
 
