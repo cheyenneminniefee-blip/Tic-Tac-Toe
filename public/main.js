@@ -75,43 +75,98 @@ function updateMessage(text, color) {
   authMessage.style.color = color;
 }
 
-// --- CP03 Game Board Logic ---
+// --- CP04 Human vs Human Game Logic ---
 
-const cells = document.querySelectorAll('.cell');
-const turnIndicator = document.getElementById('turn-indicator');
-const resetBtn = document.getElementById('reset-btn');
+const cells = document.querySelectorAll(".cell");
+const turnIndicator = document.getElementById("turn-indicator");
+const resetBtn = document.getElementById("reset-btn");
 
-let currentPlayer = 'X';
-let boardState = ['', '', '', '', '', '', '', '', '']; // Represents the 9 cells
+let currentPlayer = "X";
+let boardState = ["", "", "", "", "", "", "", "", ""];
+let gameActive = true; // Prevents clicking after the game ends
 
-// Add a click listener to every cell
-cells.forEach(cell => {
-    cell.addEventListener('click', (e) => {
-        const index = e.target.getAttribute('data-index');
+// The 8 possible ways to win Tic Tac Toe
+const winningConditions = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8], // Rows
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8], // Columns
+  [0, 4, 8],
+  [2, 4, 6], // Diagonals
+];
 
-        // Only allow clicking if the cell is empty
-        if (boardState[index] === '') {
-            // 1. Update the state array
-            boardState[index] = currentPlayer;
+function checkResult() {
+  let roundWon = false;
 
-            // 2. Update the UI
-            e.target.innerText = currentPlayer;
+  // Check each winning condition
+  for (let i = 0; i < 8; i++) {
+    const winCondition = winningConditions[i];
+    let a = boardState[winCondition[0]];
+    let b = boardState[winCondition[1]];
+    let c = boardState[winCondition[2]];
 
-            // 3. Switch turns
-            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    if (a === "" || b === "" || c === "") {
+      continue; // Skip if any of the three cells are empty
+    }
+    if (a === b && b === c) {
+      roundWon = true; // We have a match!
+      break;
+    }
+  }
 
-            // 4. Update the turn indicator
-            turnIndicator.innerText = `Player ${currentPlayer}'s Turn`;
-        }
-    });
+  if (roundWon) {
+    turnIndicator.innerText = `Player ${currentPlayer} Wins!`;
+    turnIndicator.style.color = "green";
+    gameActive = false; // Stop the game
+    return;
+  }
+
+  // Check for a draw (no empty strings left in the array)
+  let roundDraw = !boardState.includes("");
+  if (roundDraw) {
+    turnIndicator.innerText = "Game ended in a draw!";
+    turnIndicator.style.color = "orange";
+    gameActive = false;
+    return;
+  }
+
+  // If no win or draw, switch turns
+  currentPlayer = currentPlayer === "X" ? "O" : "X";
+  turnIndicator.innerText = `Player ${currentPlayer}'s Turn`;
+}
+
+cells.forEach((cell) => {
+  cell.addEventListener("click", (e) => {
+    const index = e.target.getAttribute("data-index");
+
+    // Only allow clicking if the cell is empty AND the game is still active
+    if (boardState[index] !== "" || !gameActive) {
+      return;
+    }
+
+    // 1. Update the state array
+    boardState[index] = currentPlayer;
+
+    // 2. Update the UI
+    e.target.innerText = currentPlayer;
+
+    // 3. Check for win or draw
+    checkResult();
+  });
 });
 
 // Reset the board to play again
-resetBtn.addEventListener('click', () => {
-    currentPlayer = 'X';
-    boardState = ['', '', '', '', '', '', '', '', ''];
-    turnIndicator.innerText = `Player X's Turn`;
-    cells.forEach(cell => cell.innerText = '');
+resetBtn.addEventListener("click", () => {
+  currentPlayer = "X";
+  gameActive = true;
+  boardState = ["", "", "", "", "", "", "", "", ""];
+
+  turnIndicator.innerText = `Player X's Turn`;
+  turnIndicator.style.color = "black";
+
+  cells.forEach((cell) => (cell.innerText = ""));
 });
 
 // Initialize
