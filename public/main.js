@@ -68,6 +68,7 @@ function showLoggedIn(username) {
   authContainer.style.display = "none";
   gameContainer.style.display = "block";
   displayUsername.innerText = username;
+  loadGameHistory(); // NEW: Fetch games when logged in
 }
 
 function updateMessage(text, color) {
@@ -119,16 +120,17 @@ function checkResult() {
   if (roundWon) {
     turnIndicator.innerText = `Player ${currentPlayer} Wins!`;
     turnIndicator.style.color = "green";
-    gameActive = false; // Stop the game
+    gameActive = false;
+    saveGameResult(`Player ${currentPlayer} Wins`); // NEW
     return;
   }
 
-  // Check for a draw (no empty strings left in the array)
   let roundDraw = !boardState.includes("");
   if (roundDraw) {
     turnIndicator.innerText = "Game ended in a draw!";
     turnIndicator.style.color = "orange";
     gameActive = false;
+    saveGameResult("Draw"); // NEW
     return;
   }
 
@@ -168,6 +170,34 @@ resetBtn.addEventListener("click", () => {
 
   cells.forEach((cell) => (cell.innerText = ""));
 });
+
+async function saveGameResult(resultMessage) {
+  await fetch("/api/games", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      result: resultMessage,
+      board: boardState,
+    }),
+  });
+  loadGameHistory(); // Automatically refresh the UI after saving
+}
+
+async function loadGameHistory() {
+  const res = await fetch("/api/games");
+  if (res.ok) {
+    const history = await res.json();
+    const historyList = document.getElementById("history-list");
+    historyList.innerHTML = ""; // Clear old list
+
+    history.forEach((game) => {
+      const li = document.createElement("li");
+      li.style.padding = "5px 0";
+      li.innerText = `${new Date(game.date).toLocaleString()} - ${game.result}`;
+      historyList.appendChild(li);
+    });
+  }
+}
 
 // Initialize
 checkSession();

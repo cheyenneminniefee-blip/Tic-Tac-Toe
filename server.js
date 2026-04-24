@@ -83,3 +83,53 @@ app.post('/api/logout', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
+
+// --- GAME HISTORY HELPERS ---
+const GAMES_FILE = path.join(__dirname, 'data', 'games.json');
+
+const getGames = () => {
+    try {
+        if (!fs.existsSync(GAMES_FILE)) return [];
+        const data = fs.readFileSync(GAMES_FILE, 'utf8');
+        return data ? JSON.parse(data) : [];
+    } catch (err) {
+        return [];
+    }
+};
+
+const saveGames = (games) => {
+    fs.writeFileSync(GAMES_FILE, JSON.stringify(games, null, 2));
+};
+
+// --- GAME HISTORY ROUTES ---
+
+// Save a finished game
+app.post('/api/games', (req, res) => {
+    // Only logged-in users can save games
+    if (!req.session.username) return res.status(401).json({ error: 'Not logged in' });
+
+    const { result, board } = req.body;
+    const games = getGames();
+
+    // Add the new game to the array
+    games.push({
+        username: req.session.username,
+        result: result,
+        board: board,
+        date: new Date().toISOString()
+    });
+
+    saveGames(games); // Write it to games.json
+    res.json({ message: 'Game saved successfully' });
+});
+
+// Get game history for the current user
+app.get('/api/games', (req, res) => {
+    if (!req.session.username) return res.status(401).json({ error: 'Not logged in' });
+
+    const allGames = getGames();
+    // Filter so users only see their own games
+    const userGames = allGames.filter(g => g.username === req.session.username);
+
+    res.json(userGames);
+});
