@@ -5,6 +5,8 @@ const authMessage = document.getElementById("auth-message");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const displayUsername = document.getElementById("display-username");
+const gameModeSelect = document.getElementById("game-mode");
+let isAiThinking = false;
 
 // Buttons
 document
@@ -137,24 +139,31 @@ function checkResult() {
   // If no win or draw, switch turns
   currentPlayer = currentPlayer === "X" ? "O" : "X";
   turnIndicator.innerText = `Player ${currentPlayer}'s Turn`;
+  if (gameActive && gameModeSelect.value === "ai" && currentPlayer === "O") {
+    makeAiMove();
+  }
 }
 
-cells.forEach((cell) => {
-  cell.addEventListener("click", (e) => {
-    const index = e.target.getAttribute("data-index");
+    cells.forEach((cell) => {
+      cell.addEventListener("click", (e) => {
+        const index = e.target.getAttribute("data-index");
 
-    // Only allow clicking if the cell is empty AND the game is still active
-    if (boardState[index] !== "" || !gameActive) {
-      return;
-    }
+        // ADD THIS: Explicitly log if a click was blocked
+        if (!gameActive || isAiThinking) {
+            console.log("Click ignored: AI is thinking or game is over");
+            return;
+        }
 
-    // 1. Update the state array
+        if (boardState[index] !== "") return; 
+        if (gameModeSelect.value === "ai" && currentPlayer === "O") return; 
+
+        // ... rest of your code
+
+    // 3. Human makes a move
     boardState[index] = currentPlayer;
-
-    // 2. Update the UI
     e.target.innerText = currentPlayer;
 
-    // 3. Check for win or draw
+    // 4. Check if that move won the game
     checkResult();
   });
 });
@@ -199,5 +208,48 @@ async function loadGameHistory() {
   }
 }
 
+async function makeAiMove() {
+  isAiThinking = true;
+  turnIndicator.innerText = "AI is thinking...";
+
+  try {
+    const res = await fetch('/api/ai-move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ board: boardState })
+    });
+
+    if (!res.ok) {
+      throw new Error(`Server responded with ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    // Safety check: make sure the AI actually gave us a number
+    if (data.move === undefined) {
+      throw new Error("AI returned invalid data");
+    }
+
+    const cell = document.querySelector(`.cell[data-index="${data.move}"]`);
+    boardState[data.move] = 'O';
+    cell.innerText = 'O';
+
+    isAiThinking = false;
+    checkResult();
+
+  } catch (err) {
+    console.error("AI Move failed:", err);
+    turnIndicator.innerText = "AI failed to move. Your turn!";
+    turnIndicator.style.color = "red";
+
+    // Reset these so the human can keep playing PvP if the AI dies
+    isAiThinking = false;
+    currentPlayer = 'X'; 
+  }
+}
+// Reset the game if the user changes the mode
+gameModeSelect.addEventListener("change", () => {
+  resetBtn.click();
+});
 // Initialize
 checkSession();
