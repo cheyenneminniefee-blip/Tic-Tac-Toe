@@ -28,3 +28,19 @@ p { color: #94a3b8; }
 .cell:hover {
   background-color: #e0e0e0;
 }
+
+#ai-message-box {
+  /* 1. Reserve vertical space so the board doesn't jump when text appears */
+  min-height: 50px; 
+
+  /* 2. Restrict the width so it matches your board and doesn't stretch outward */
+  max-width: 300px; 
+
+  /* 3. Force long sentences (or the AI accidentally mashing the keyboard) to wrap */
+  overflow-wrap: break-word; 
+  white-space: normal;
+
+  /* Optional: Add a little breathing room */
+  margin-top: 15px;
+  line-height: 1.4;
+}

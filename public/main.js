@@ -6,6 +6,10 @@ const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const displayUsername = document.getElementById("display-username");
 const gameModeSelect = document.getElementById("game-mode");
+const aiDifficultySelect = document.getElementById("ai-difficulty");
+// 1. Add the new elements at the top of your file
+const aiPersonalitySelect = document.getElementById("ai-personality");
+const aiMessageBox = document.getElementById("ai-message-box");
 let isAiThinking = false;
 
 // Buttons
@@ -144,20 +148,20 @@ function checkResult() {
   }
 }
 
-    cells.forEach((cell) => {
-      cell.addEventListener("click", (e) => {
-        const index = e.target.getAttribute("data-index");
+cells.forEach((cell) => {
+  cell.addEventListener("click", (e) => {
+    const index = e.target.getAttribute("data-index");
 
-        // ADD THIS: Explicitly log if a click was blocked
-        if (!gameActive || isAiThinking) {
-            console.log("Click ignored: AI is thinking or game is over");
-            return;
-        }
+    // ADD THIS: Explicitly log if a click was blocked
+    if (!gameActive || isAiThinking) {
+      console.log("Click ignored: AI is thinking or game is over");
+      return;
+    }
 
-        if (boardState[index] !== "") return; 
-        if (gameModeSelect.value === "ai" && currentPlayer === "O") return; 
+    if (boardState[index] !== "") return;
+    if (gameModeSelect.value === "ai" && currentPlayer === "O") return;
 
-        // ... rest of your code
+    // ... rest of your code
 
     // 3. Human makes a move
     boardState[index] = currentPlayer;
@@ -211,40 +215,42 @@ async function loadGameHistory() {
 async function makeAiMove() {
   isAiThinking = true;
   turnIndicator.innerText = "AI is thinking...";
+  aiMessageBox.innerText = "AI is typing..."; // Show typing indicator
 
   try {
-    const res = await fetch('/api/ai-move', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ board: boardState })
+    const res = await fetch("/api/ai-move", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        board: boardState,
+        difficulty: aiDifficultySelect.value,
+        personality: aiPersonalitySelect.value, // <-- WE ADDED THIS
+      }),
     });
 
-    if (!res.ok) {
-      throw new Error(`Server responded with ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
 
     const data = await res.json();
+    if (data.move === undefined) throw new Error("AI returned invalid data");
 
-    // Safety check: make sure the AI actually gave us a number
-    if (data.move === undefined) {
-      throw new Error("AI returned invalid data");
-    }
-
+    // Update the board
     const cell = document.querySelector(`.cell[data-index="${data.move}"]`);
-    boardState[data.move] = 'O';
-    cell.innerText = 'O';
+    boardState[data.move] = "O";
+    cell.innerText = "O";
+
+    // <-- WE ADDED THIS: Display the AI's custom message
+    if (data.message) {
+      aiMessageBox.innerText = `AI says: "${data.message}"`;
+    }
 
     isAiThinking = false;
     checkResult();
-
   } catch (err) {
     console.error("AI Move failed:", err);
     turnIndicator.innerText = "AI failed to move. Your turn!";
     turnIndicator.style.color = "red";
-
-    // Reset these so the human can keep playing PvP if the AI dies
     isAiThinking = false;
-    currentPlayer = 'X'; 
+    currentPlayer = "X";
   }
 }
 // Reset the game if the user changes the mode

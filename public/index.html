@@ -1,60 +1,90 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe AI</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <h1>Tic Tac Toe AI</h1>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tic Tac Toe AI</title>
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <h1>Tic Tac Toe AI</h1>
 
-    <div id="auth-container">
-        <h2>Login or Register</h2>
-        <input type="text" id="username" placeholder="Username">
-        <input type="password" id="password" placeholder="Password">
-        <div class="button-group">
-            <button id="login-btn">Login</button>
-            <button id="register-btn">Register</button>
-        </div>
-        <p id="auth-message"></p>
-    </div>
-
-    <div id="game-container" style="display: none;">
-        <h2>Welcome, <span id="display-username"></span>!</h2>
-        <button id="logout-btn">Logout</button>
-
-        <div id="game-ui" style="margin-top: 20px;">
-            <h3 id="turn-indicator">Player X's Turn</h3>
-
-            <div id="tic-tac-toe-board">
-                <div class="cell" data-index="0"></div>
-                <div class="cell" data-index="1"></div>
-                <div class="cell" data-index="2"></div>
-                <div class="cell" data-index="3"></div>
-                <div class="cell" data-index="4"></div>
-                <div class="cell" data-index="5"></div>
-                <div class="cell" data-index="6"></div>
-                <div class="cell" data-index="7"></div>
-                <div class="cell" data-index="8"></div>
+        <div id="auth-container">
+            <h2>Login or Register</h2>
+            <input type="text" id="username" placeholder="Username" />
+            <input type="password" id="password" placeholder="Password" />
+            <div class="button-group">
+                <button id="login-btn">Login</button>
+                <button id="register-btn">Register</button>
             </div>
+            <p id="auth-message"></p>
+        </div>
 
-            <button id="reset-btn" style="margin-top: 15px;">Reset Board</button>
-            <div style="margin-top: 15px;">
-                <label><strong>Mode:</strong></label>
-                <select id="game-mode">
-                    <option value="pvp">Human vs Human</option>
-                    <option value="ai">Human vs AI</option>
+        <div id="game-container" style="display: none">
+            <h2>Welcome, <span id="display-username"></span>!</h2>
+            <button id="logout-btn">Logout</button>
+
+            <div id="game-ui" style="margin-top: 20px">
+                <h3 id="turn-indicator">Player X's Turn</h3>
+
+                <div id="tic-tac-toe-board">
+                    <div class="cell" data-index="0"></div>
+                    <div class="cell" data-index="1"></div>
+                    <div class="cell" data-index="2"></div>
+                    <div class="cell" data-index="3"></div>
+                    <div class="cell" data-index="4"></div>
+                    <div class="cell" data-index="5"></div>
+                    <div class="cell" data-index="6"></div>
+                    <div class="cell" data-index="7"></div>
+                    <div class="cell" data-index="8"></div>
+                </div>
+
+                <button id="reset-btn" style="margin-top: 15px">
+                    Reset Board
+                </button>
+                <div style="margin-top: 15px">
+                    <label><strong>Mode:</strong></label>
+                    <select id="game-mode">
+                        <option value="pvp">Human vs Human</option>
+                        <option value="ai" selected>Human vs AI</option>
+                    </select>
+
+                    <label style="margin-left: 10px"
+                        ><strong>Difficulty:</strong></label
+                    >
+                    <select id="ai-difficulty">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                <label for="ai-personality">AI Personality:</label>
+                <select id="ai-personality">
+                  <option value="friendly">Friendly</option>
+                  <option value="funny">Funny</option>
+                  <option value="trash-talker">Trash Talker</option>
                 </select>
+
+                <div id="ai-message-box" style="margin-top: 10px; font-style: italic; color: #555;">
+                  AI says: "Let's play!"
+                </div>
+            </div>
+            <div
+                id="history-section"
+                style="
+                    margin-top: 30px;
+                    border-top: 2px solid #ccc;
+                    padding-top: 15px;
+                "
+            >
+                <h3>Your Game History</h3>
+                <ul
+                    id="history-list"
+                    style="list-style-type: none; padding: 0"
+                ></ul>
             </div>
         </div>
-        <div id="history-section" style="margin-top: 30px; border-top: 2px solid #ccc; padding-top: 15px;">
-            <h3>Your Game History</h3>
-            <ul id="history-list" style="list-style-type: none; padding: 0;">
-                </ul>
-        </div>
-    </div>
 
-    <script src="main.js"></script>
-</body>
+        <script src="main.js"></script>
+    </body>
 </html>

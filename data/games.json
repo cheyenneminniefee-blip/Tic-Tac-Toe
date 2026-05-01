@@ -3,96 +3,16 @@
     "username": "clm",
     "result": "Player X Wins",
     "board": [
-      "X",
-      "O",
-      "",
-      "X",
       "O",
       "",
       "X",
       "",
-      ""
-    ],
-    "date": "2026-04-24T18:32:00.723Z"
-  },
-  {
-    "username": "clm",
-    "result": "Draw",
-    "board": [
-      "X",
-      "O",
-      "X",
-      "O",
       "O",
       "X",
       "X",
-      "X",
-      "O"
-    ],
-    "date": "2026-04-24T18:32:22.151Z"
-  },
-  {
-    "username": "clm",
-    "result": "Draw",
-    "board": [
-      "O",
-      "X",
-      "X",
-      "X",
-      "X",
-      "O",
-      "O",
       "O",
       "X"
     ],
-    "date": "2026-04-27T17:32:00.591Z"
-  },
-  {
-    "username": "clm",
-    "result": "Player X Wins",
-    "board": [
-      "X",
-      "",
-      "",
-      "X",
-      "",
-      "",
-      "X",
-      "",
-      ""
-    ],
-    "date": "2026-04-29T17:39:31.784Z"
-  },
-  {
-    "username": "clm",
-    "result": "Player X Wins",
-    "board": [
-      "X",
-      "X",
-      "",
-      "",
-      "X",
-      "X",
-      "X",
-      "",
-      "X"
-    ],
-    "date": "2026-04-29T17:40:11.839Z"
-  },
-  {
-    "username": "clm",
-    "result": "Player X Wins",
-    "board": [
-      "O",
-      "X",
-      "O",
-      "X",
-      "O",
-      "O",
-      "X",
-      "X",
-      "X"
-    ],
-    "date": "2026-04-29T18:03:59.819Z"
+    "date": "2026-05-01T18:02:19.582Z"
   }
 ]
