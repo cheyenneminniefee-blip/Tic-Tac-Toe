@@ -74,7 +74,10 @@ function showLoggedIn(username) {
   authContainer.style.display = "none";
   gameContainer.style.display = "block";
   displayUsername.innerText = username;
-  loadGameHistory(); // NEW: Fetch games when logged in
+
+  localStorage.setItem("username", username); // <-- ADD THIS LINE
+
+  loadGameHistory(); 
 }
 
 function updateMessage(text, color) {
@@ -127,7 +130,16 @@ function checkResult() {
     turnIndicator.innerText = `Player ${currentPlayer} Wins!`;
     turnIndicator.style.color = "green";
     gameActive = false;
-    saveGameResult(`Player ${currentPlayer} Wins`); // NEW
+
+    // 1. Save for personal history list
+    saveGameResult(`Player ${currentPlayer} Wins`);
+
+    // 2. NEW: Save for Global Leaderboard & AI Stats
+    if (currentPlayer === "X") {
+      saveGameRecord("win"); // Player won
+    } else {
+      saveGameRecord("loss"); // Player lost (AI won)
+    }
     return;
   }
 
@@ -136,13 +148,19 @@ function checkResult() {
     turnIndicator.innerText = "Game ended in a draw!";
     turnIndicator.style.color = "orange";
     gameActive = false;
-    saveGameResult("Draw"); // NEW
+
+    // 1. Save for personal history list
+    saveGameResult("Draw");
+
+    // 2. NEW: Save for Global Leaderboard & AI Stats
+    saveGameRecord("draw");
     return;
   }
 
   // If no win or draw, switch turns
   currentPlayer = currentPlayer === "X" ? "O" : "X";
   turnIndicator.innerText = `Player ${currentPlayer}'s Turn`;
+
   if (gameActive && gameModeSelect.value === "ai" && currentPlayer === "O") {
     makeAiMove();
   }
@@ -209,6 +227,35 @@ async function loadGameHistory() {
       li.innerText = `${new Date(game.date).toLocaleString()} - ${game.result}`;
       historyList.appendChild(li);
     });
+  }
+}
+
+async function saveGameRecord(gameResult) {
+  try {
+    // Grab the current settings from the UI
+    const difficulty =
+      document.getElementById("ai-difficulty")?.value || "medium";
+    const personality =
+      document.getElementById("ai-personality")?.value || "friendly";
+
+    // Grab the username (you might need to adjust this depending on how you store the logged-in user)
+    // For example, if it's stored in a variable or local storage:
+    const playerName = localStorage.getItem("username") || "Player1";
+
+    await fetch("/api/save-game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        player: playerName,
+        result: gameResult,
+        difficulty: difficulty,
+        personality: personality,
+      }),
+    });
+
+    console.log("Game saved successfully!");
+  } catch (err) {
+    console.error("Failed to save game record:", err);
   }
 }
 

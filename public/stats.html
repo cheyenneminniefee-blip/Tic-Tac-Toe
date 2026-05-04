@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Stats</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>Game Statistics</h1>
+            <a href="index.html" class="button">Back to Game</a>
+        </header>
+
+        <hr style="border-color: #444; margin: 20px 0;">
+
+        <section>
+            <h2 style="color: #fca311;">🏆 Player Leaderboard</h2>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player Name</th>
+                        <th>Wins</th>
+                        <th>Total Games</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <tr><td colspan="4">Loading leaderboard...</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <br>
+
+        <section>
+            <h2 style="color: #fca311;">🤖 AI Win Rates</h2>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+
+                <div style="flex: 1; min-width: 300px;">
+                    <h3>By Difficulty</h3>
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Difficulty</th>
+                                <th>AI Win Rate</th>
+                                <th>Matches</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ai-difficulty-body">
+                            <tr><td colspan="3">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="flex: 1; min-width: 300px;">
+                    <h3>By Personality</h3>
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Personality</th>
+                                <th>AI Win Rate</th>
+                                <th>Matches</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ai-personality-body">
+                            <tr><td colspan="3">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <script src="stats.js"></script>
+</body>
+</html>

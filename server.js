@@ -3,7 +3,7 @@ const path = require("path");
 const express = require("express");
 const session = require("express-session");
 const fs = require("fs"); // Missing: Needed to read/write files
-
+const statsFilePath = path.join(__dirname, 'data', 'stats.json');
 const app = express();
 const PORT = process.env.PORT || 8081;
 const USERS_FILE = path.join(__dirname, "data", "users.json"); // Path to your user database
@@ -268,4 +268,111 @@ app.get("/api/games", (req, res) => {
     );
 
     res.json(userGames);
+});
+
+// --- GLOBAL STATS ROUTES ---
+
+app.get('/api/stats', (req, res) => {
+    try {
+        // Safety check: If stats.json doesn't exist yet, return empty data
+        if (!fs.existsSync(statsFilePath)) {
+            return res.json({ leaderboard: [], aiStats: { byDifficulty: {}, byPersonality: {} } });
+        }
+
+        const statsData = fs.readFileSync(statsFilePath, 'utf8');
+        // Safety check: If file is completely empty, default to empty array
+        const games = statsData ? JSON.parse(statsData) : [];
+
+        // 2. Calculate Player Leaderboard
+        const playerStats = {};
+
+        games.forEach(game => {
+            const player = game.player || "Unknown";
+            if (!playerStats[player]) {
+                playerStats[player] = { wins: 0, totalGames: 0 };
+            }
+
+            playerStats[player].totalGames++;
+            if (game.result === "win") {
+                playerStats[player].wins++;
+            }
+        });
+
+        const leaderboard = Object.keys(playerStats).map(player => ({
+            name: player,
+            wins: playerStats[player].wins,
+            totalGames: playerStats[player].totalGames
+        })).sort((a, b) => b.wins - a.wins);
+
+        // 3. Calculate AI Win Rates
+        const aiStats = {
+            byDifficulty: { easy: { wins: 0, total: 0 }, medium: { wins: 0, total: 0 }, hard: { wins: 0, total: 0 } },
+            byPersonality: { friendly: { wins: 0, total: 0 }, funny: { wins: 0, total: 0 }, 'trash-talker': { wins: 0, total: 0 } }
+        };
+
+        games.forEach(game => {
+            const diff = game.difficulty;
+            const pers = game.personality;
+            const aiWon = game.result === "loss"; // If player lost, AI won
+
+            if (diff && aiStats.byDifficulty[diff]) {
+                aiStats.byDifficulty[diff].total++;
+                if (aiWon) aiStats.byDifficulty[diff].wins++;
+            }
+
+            if (pers && aiStats.byPersonality[pers]) {
+                aiStats.byPersonality[pers].total++;
+                if (aiWon) aiStats.byPersonality[pers].wins++;
+            }
+        });
+
+        const calcWinRate = (statsObj) => {
+            for (const key in statsObj) {
+                const data = statsObj[key];
+                data.winRate = data.total > 0 ? ((data.wins / data.total) * 100).toFixed(1) + '%' : '0%';
+            }
+        };
+
+        calcWinRate(aiStats.byDifficulty);
+        calcWinRate(aiStats.byPersonality);
+
+        res.json({
+            leaderboard: leaderboard.slice(0, 10),
+            aiStats: aiStats
+        });
+
+    } catch (error) {
+        console.error("Failed to fetch stats:", error);
+        res.status(500).json({ error: "Could not load stats" });
+    }
+});
+
+app.post('/api/save-game', (req, res) => {
+    try {
+        const { player, result, difficulty, personality } = req.body;
+
+        // Safety check: Create stats.json with an empty array if it doesn't exist
+        if (!fs.existsSync(statsFilePath)) {
+            fs.writeFileSync(statsFilePath, "[]");
+        }
+
+        const statsData = fs.readFileSync(statsFilePath, 'utf8');
+        const games = statsData ? JSON.parse(statsData) : [];
+
+        // Add the new game to the stats file
+        games.push({
+            player: player || "Guest",
+            result: result, 
+            difficulty: difficulty || "medium",
+            personality: personality || "friendly",
+            timestamp: new Date().toISOString()
+        });
+
+        fs.writeFileSync(statsFilePath, JSON.stringify(games, null, 2));
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error saving global stats:", error);
+        res.status(500).json({ error: "Failed to save game stats" });
+    }
 });
