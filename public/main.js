@@ -179,11 +179,9 @@ cells.forEach((cell) => {
     if (boardState[index] !== "") return;
     if (gameModeSelect.value === "ai" && currentPlayer === "O") return;
 
-    // ... rest of your code
-
     // 3. Human makes a move
     boardState[index] = currentPlayer;
-    e.target.innerText = currentPlayer;
+    e.target.classList.add(currentPlayer.toLowerCase()); // Add 'x' or 'o' class
 
     // 4. Check if that move won the game
     checkResult();
@@ -199,7 +197,10 @@ resetBtn.addEventListener("click", () => {
   turnIndicator.innerText = `Player X's Turn`;
   turnIndicator.style.color = "black";
 
-  cells.forEach((cell) => (cell.innerText = ""));
+  cells.forEach((cell) => {
+    cell.innerText = "";
+    cell.classList.remove("x", "o"); // Remove classes on reset
+  });
 });
 
 async function saveGameResult(resultMessage) {
@@ -283,7 +284,7 @@ async function makeAiMove() {
     // Update the board
     const cell = document.querySelector(`.cell[data-index="${data.move}"]`);
     boardState[data.move] = "O";
-    cell.innerText = "O";
+    cell.classList.add("o"); // Add 'o' class
 
     // <-- WE ADDED THIS: Display the AI's custom message
     if (data.message) {
