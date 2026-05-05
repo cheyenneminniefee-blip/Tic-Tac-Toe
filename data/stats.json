@@ -5,5 +5,47 @@
     "difficulty": "medium",
     "personality": "friendly",
     "timestamp": "2026-05-04T17:59:37.712Z"
+  },
+  {
+    "player": "clm",
+    "result": "loss",
+    "difficulty": "medium",
+    "personality": "friendly",
+    "timestamp": "2026-05-04T18:13:54.458Z"
+  },
+  {
+    "player": "clm",
+    "result": "win",
+    "difficulty": "medium",
+    "personality": "friendly",
+    "timestamp": "2026-05-05T17:41:26.101Z"
+  },
+  {
+    "player": "clm",
+    "result": "win",
+    "difficulty": "ultra",
+    "personality": "friendly",
+    "timestamp": "2026-05-05T17:41:34.386Z"
+  },
+  {
+    "player": "clm",
+    "result": "draw",
+    "difficulty": "medium",
+    "personality": "friendly",
+    "timestamp": "2026-05-05T17:54:59.615Z"
+  },
+  {
+    "player": "clm",
+    "result": "draw",
+    "difficulty": "ultra",
+    "personality": "friendly",
+    "timestamp": "2026-05-05T17:55:36.400Z"
+  },
+  {
+    "player": "clm",
+    "result": "loss",
+    "difficulty": "ultra",
+    "personality": "trash-talker",
+    "timestamp": "2026-05-05T18:00:42.396Z"
   }
 ]

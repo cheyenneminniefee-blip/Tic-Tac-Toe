@@ -77,7 +77,7 @@ function showLoggedIn(username) {
 
   localStorage.setItem("username", username); // <-- ADD THIS LINE
 
-  loadGameHistory(); 
+  loadGameHistory();
 }
 
 function updateMessage(text, color) {
@@ -85,43 +85,137 @@ function updateMessage(text, color) {
   authMessage.style.color = color;
 }
 
-// --- CP04 Human vs Human Game Logic ---
+// --- CP04 & CP09 Dynamic Game Logic ---
 
-const cells = document.querySelectorAll(".cell");
+const boardContainer = document.getElementById("tic-tac-toe-board");
 const turnIndicator = document.getElementById("turn-indicator");
 const resetBtn = document.getElementById("reset-btn");
 
 let currentPlayer = "X";
-let boardState = ["", "", "", "", "", "", "", "", ""];
-let gameActive = true; // Prevents clicking after the game ends
+let gridSize = 3; // Defaults to 3x3
+let boardState = [];
+let gameActive = true;
+let winningConditions = [];
 
-// The 8 possible ways to win Tic Tac Toe
-const winningConditions = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8], // Rows
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8], // Columns
-  [0, 4, 8],
-  [2, 4, 6], // Diagonals
-];
+// NEW: Function to calculate all rows, columns, and diagonals dynamically
+// NEW: Advanced winning conditions generator
+function generateWinningConditions(size, winLength) {
+  let conditions = [];
+
+  // Rows: Slide horizontally
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c <= size - winLength; c++) {
+      let rowWin = [];
+      for (let i = 0; i < winLength; i++) {
+        rowWin.push(r * size + (c + i));
+      }
+      conditions.push(rowWin);
+    }
+  }
+
+  // Columns: Slide vertically
+  for (let c = 0; c < size; c++) {
+    for (let r = 0; r <= size - winLength; r++) {
+      let colWin = [];
+      for (let i = 0; i < winLength; i++) {
+        colWin.push((r + i) * size + c);
+      }
+      conditions.push(colWin);
+    }
+  }
+
+  // Diagonals (Top-Left to Bottom-Right)
+  for (let r = 0; r <= size - winLength; r++) {
+    for (let c = 0; c <= size - winLength; c++) {
+      let diag1Win = [];
+      for (let i = 0; i < winLength; i++) {
+        diag1Win.push((r + i) * size + (c + i));
+      }
+      conditions.push(diag1Win);
+    }
+  }
+
+  // Diagonals (Top-Right to Bottom-Left)
+  for (let r = 0; r <= size - winLength; r++) {
+    for (let c = winLength - 1; c < size; c++) {
+      let diag2Win = [];
+      for (let i = 0; i < winLength; i++) {
+        diag2Win.push((r + i) * size + (c - i));
+      }
+      conditions.push(diag2Win);
+    }
+  }
+
+  return conditions;
+}
+
+// Inside initBoard()...
+function initBoard() {
+  // Check if ultra-hard is selected
+  gridSize = aiDifficultySelect.value === "ultra" ? 5 : 3;
+
+  // NEW: If 5x5, require 4 to win. If 3x3, require 3.
+  const requiredToWin = gridSize === 5 ? 4 : 3;
+
+  // Reset state variables based on grid size
+  boardState = Array(gridSize * gridSize).fill("");
+  winningConditions = generateWinningConditions(gridSize, requiredToWin); // <-- UPDATE THIS LINE
+  currentPlayer = "X";
+  // ... rest of initBoard stays the same
+  gameActive = true;
+  turnIndicator.innerText = `Player X's Turn`;
+  turnIndicator.style.color = "black";
+
+  // Clear and redraw the HTML board
+  // Clear and redraw the HTML board
+  boardContainer.innerHTML = "";
+
+  // UPDATED INLINE CSS: Keep the board tight and centered
+  boardContainer.style.display = "inline-grid";
+  boardContainer.style.gridTemplateColumns = `repeat(${gridSize}, auto)`;
+  boardContainer.style.gap = "10px"; // Adjust this number if your grid lines look too thick/thin
+
+  for (let i = 0; i < gridSize * gridSize; i++) {
+    const cell = document.createElement("div");
+    cell.classList.add("cell");
+    cell.setAttribute("data-index", i);
+
+    // Add click listener to the newly created cell
+    cell.addEventListener("click", handleCellClick);
+    boardContainer.appendChild(cell);
+  }
+}
+
+function handleCellClick(e) {
+  const index = e.target.getAttribute("data-index");
+
+  if (!gameActive || isAiThinking) {
+    console.log("Click ignored: AI is thinking or game is over");
+    return;
+  }
+
+  if (boardState[index] !== "") return;
+  if (gameModeSelect.value === "ai" && currentPlayer === "O") return;
+
+  // Human makes a move
+  boardState[index] = currentPlayer;
+  e.target.classList.add(currentPlayer.toLowerCase());
+  e.target.innerText = currentPlayer;
+
+  checkResult();
+}
 
 function checkResult() {
   let roundWon = false;
 
-  // Check each winning condition
-  for (let i = 0; i < 8; i++) {
-    const winCondition = winningConditions[i];
-    let a = boardState[winCondition[0]];
-    let b = boardState[winCondition[1]];
-    let c = boardState[winCondition[2]];
+  // NEW: Dynamic win checker (works for any size array)
+  for (let condition of winningConditions) {
+    const firstCell = boardState[condition[0]];
+    if (firstCell === "") continue;
 
-    if (a === "" || b === "" || c === "") {
-      continue; // Skip if any of the three cells are empty
-    }
-    if (a === b && b === c) {
-      roundWon = true; // We have a match!
+    // Check if every cell in this condition matches the first cell
+    if (condition.every((index) => boardState[index] === firstCell)) {
+      roundWon = true;
       break;
     }
   }
@@ -130,16 +224,8 @@ function checkResult() {
     turnIndicator.innerText = `Player ${currentPlayer} Wins!`;
     turnIndicator.style.color = "green";
     gameActive = false;
-
-    // 1. Save for personal history list
     saveGameResult(`Player ${currentPlayer} Wins`);
-
-    // 2. NEW: Save for Global Leaderboard & AI Stats
-    if (currentPlayer === "X") {
-      saveGameRecord("win"); // Player won
-    } else {
-      saveGameRecord("loss"); // Player lost (AI won)
-    }
+    saveGameRecord(currentPlayer === "X" ? "win" : "loss");
     return;
   }
 
@@ -148,16 +234,11 @@ function checkResult() {
     turnIndicator.innerText = "Game ended in a draw!";
     turnIndicator.style.color = "orange";
     gameActive = false;
-
-    // 1. Save for personal history list
     saveGameResult("Draw");
-
-    // 2. NEW: Save for Global Leaderboard & AI Stats
     saveGameRecord("draw");
     return;
   }
 
-  // If no win or draw, switch turns
   currentPlayer = currentPlayer === "X" ? "O" : "X";
   turnIndicator.innerText = `Player ${currentPlayer}'s Turn`;
 
@@ -166,27 +247,11 @@ function checkResult() {
   }
 }
 
-cells.forEach((cell) => {
-  cell.addEventListener("click", (e) => {
-    const index = e.target.getAttribute("data-index");
+resetBtn.addEventListener("click", initBoard);
+aiDifficultySelect.addEventListener("change", initBoard);
 
-    // ADD THIS: Explicitly log if a click was blocked
-    if (!gameActive || isAiThinking) {
-      console.log("Click ignored: AI is thinking or game is over");
-      return;
-    }
-
-    if (boardState[index] !== "") return;
-    if (gameModeSelect.value === "ai" && currentPlayer === "O") return;
-
-    // 3. Human makes a move
-    boardState[index] = currentPlayer;
-    e.target.classList.add(currentPlayer.toLowerCase()); // Add 'x' or 'o' class
-
-    // 4. Check if that move won the game
-    checkResult();
-  });
-});
+// Call initBoard right away to draw the initial 3x3 board
+initBoard();
 
 // Reset the board to play again
 resetBtn.addEventListener("click", () => {
@@ -285,6 +350,7 @@ async function makeAiMove() {
     const cell = document.querySelector(`.cell[data-index="${data.move}"]`);
     boardState[data.move] = "O";
     cell.classList.add("o"); // Add 'o' class
+    cell.innerText = "O"; // <-- ADD THIS LINE to make the move visible
 
     // <-- WE ADDED THIS: Display the AI's custom message
     if (data.message) {

@@ -29,22 +29,6 @@ p { color: #94a3b8; }
   background-color: #e0e0e0;
 }
 
-/* Style for X (blue) */
-.cell.x::before {
-    content: "X";
-    color: blue;
-    font-size: 4rem;
-    font-weight: bold;
-}
-
-/* Style for O (orange) */
-.cell.o::before {
-    content: "O";
-    color: orange;
-    font-size: 4rem;
-    font-weight: bold;
-}
-
 #ai-message-box {
   /* 1. Reserve vertical space so the board doesn't jump when text appears */
   min-height: 50px; 

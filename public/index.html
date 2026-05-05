@@ -28,17 +28,7 @@
             <div id="game-ui" style="margin-top: 20px">
                 <h3 id="turn-indicator">Player X's Turn</h3>
 
-                <div id="tic-tac-toe-board">
-                    <div class="cell" data-index="0"></div>
-                    <div class="cell" data-index="1"></div>
-                    <div class="cell" data-index="2"></div>
-                    <div class="cell" data-index="3"></div>
-                    <div class="cell" data-index="4"></div>
-                    <div class="cell" data-index="5"></div>
-                    <div class="cell" data-index="6"></div>
-                    <div class="cell" data-index="7"></div>
-                    <div class="cell" data-index="8"></div>
-                </div>
+                <div id="tic-tac-toe-board"></div>
 
                 <button id="reset-btn" style="margin-top: 15px">
                     Reset Board
@@ -51,12 +41,12 @@
                     </select>
 
                     <label style="margin-left: 10px"
-                        ><strong>Difficulty:</strong></label
-                    >
+                        ><strong>Difficulty:</strong></label>
                     <select id="ai-difficulty">
                         <option value="easy">Easy</option>
                         <option value="medium" selected>Medium</option>
                         <option value="hard">Hard</option>
+                        <option value="ultra">Insane</option>
                     </select>
                 </div>
                 <label for="ai-personality">AI Personality:</label>

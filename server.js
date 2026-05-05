@@ -2,13 +2,21 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
-const fs = require("fs"); // Missing: Needed to read/write files
-const statsFilePath = path.join(__dirname, 'data', 'stats.json');
+const fs = require("fs");
+
+// --- NEW SAFETY CHECK: Ensure 'data' folder exists so the server doesn't crash ---
+const dataDir = path.join(__dirname, "data");
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir);
+}
+
+const statsFilePath = path.join(dataDir, "stats.json");
+const USERS_FILE = path.join(dataDir, "users.json");
+const GAMES_FILE = path.join(dataDir, "games.json");
+
 const app = express();
 const PORT = process.env.PORT || 8081;
-const USERS_FILE = path.join(__dirname, "data", "users.json"); // Path to your user database
 
-// Make sure this is at the top of server.js
 const Groq = require("groq-sdk");
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -24,24 +32,35 @@ app.use(
 app.use(express.static(path.join(__dirname, "public")));
 
 // --- HELPER FUNCTIONS ---
-// Reads the users.json file and returns an array
 const getUsers = () => {
     try {
+        if (!fs.existsSync(USERS_FILE)) return [];
         const data = fs.readFileSync(USERS_FILE, "utf8");
-        return JSON.parse(data);
+        return data ? JSON.parse(data) : [];
     } catch (err) {
-        return []; // Return empty array if file doesn't exist yet
+        return [];
     }
 };
 
-// Saves the array back to users.json
 const saveUsers = (users) => {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 };
 
-// --- AUTH ROUTES ---
+const getGames = () => {
+    try {
+        if (!fs.existsSync(GAMES_FILE)) return [];
+        const data = fs.readFileSync(GAMES_FILE, "utf8");
+        return data ? JSON.parse(data) : [];
+    } catch (err) {
+        return [];
+    }
+};
 
-// 1. Register
+const saveGames = (games) => {
+    fs.writeFileSync(GAMES_FILE, JSON.stringify(games, null, 2));
+};
+
+// --- AUTH ROUTES ---
 app.post("/api/register", (req, res) => {
     const { username, password } = req.body;
     const users = getUsers();
@@ -50,13 +69,11 @@ app.post("/api/register", (req, res) => {
         return res.status(400).json({ error: "Username already exists" });
     }
 
-    // Passwords stored in plaintext for learning purposes
     users.push({ username, password });
     saveUsers(users);
     res.json({ message: "User registered successfully" });
 });
 
-// 2. Login
 app.post("/api/login", (req, res) => {
     const { username, password } = req.body;
     const user = getUsers().find(
@@ -64,14 +81,13 @@ app.post("/api/login", (req, res) => {
     );
 
     if (user) {
-        req.session.username = username; // Store user in session
+        req.session.username = username;
         res.json({ username });
     } else {
         res.status(401).json({ error: "Invalid username or password" });
     }
 });
 
-// 3. Check Session (Needed for main.js checkSession function)
 app.get("/api/me", (req, res) => {
     if (req.session.username) {
         res.json({ username: req.session.username });
@@ -80,45 +96,98 @@ app.get("/api/me", (req, res) => {
     }
 });
 
-// 4. Logout
 app.post("/api/logout", (req, res) => {
     req.session.destroy();
     res.json({ message: "Logged out" });
 });
 
-app.post('/api/ai-move', async (req, res) => {
+// --- AI ROUTE ---
+app.post("/api/ai-move", async (req, res) => {
     console.log("--- AI Move Requested ---");
 
     try {
-        // 1. Grab the personality from req.body
         const { board, difficulty, personality } = req.body;
 
         if (!process.env.GROQ_API_KEY) {
             return res.status(500).json({ error: "Server API Key missing" });
         }
 
+        // Safety check: Prevent crash if frontend sends invalid board data
+        if (!board || !Array.isArray(board)) {
+            return res
+                .status(400)
+                .json({ error: "Invalid board data received." });
+        }
+
+        const gridSize = Math.sqrt(board.length);
         const emptySpots = board
-            .map((val, index) => val === '' ? index : null)
-            .filter(val => val !== null);
+            .map((val, index) => (val === "" ? index : null))
+            .filter((val) => val !== null);
 
-        const c = (i) => board[i] === '' ? i.toString() : board[i];
-        const boardVisual = `
-          ${c(0)} | ${c(1)} | ${c(2)}
-         ---+---+---
-          ${c(3)} | ${c(4)} | ${c(5)}
-         ---+---+---
-          ${c(6)} | ${c(7)} | ${c(8)}
-        `;
+        const getCellStr = (i) => {
+            if (board[i] !== "") return ` ${board[i]} `;
+            return i < 10 ? ` ${i} ` : `${i} `;
+        };
 
-        const winningConditions = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8], 
-            [0, 3, 6], [1, 4, 7], [2, 5, 8], 
-            [0, 4, 8], [2, 4, 6]             
-        ];
+        let boardVisual = "";
+        for (let r = 0; r < gridSize; r++) {
+            let row = [];
+            for (let c = 0; c < gridSize; c++) {
+                row.push(getCellStr(r * gridSize + c));
+            }
+            boardVisual += row.join("|") + "\n";
+            if (r < gridSize - 1) {
+                boardVisual += "-".repeat(gridSize * 4 - 1) + "\n";
+            }
+        }
+
+        // Inside app.post("/api/ai-move", ...)
+        // REPLACE the old getWinningConditions with this:
+
+        const getWinningConditions = (size, winLength) => {
+            let conditions = [];
+
+            // Rows
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c <= size - winLength; c++) {
+                    let rowWin = [];
+                    for (let i = 0; i < winLength; i++) rowWin.push(r * size + (c + i));
+                    conditions.push(rowWin);
+                }
+            }
+            // Columns
+            for (let c = 0; c < size; c++) {
+                for (let r = 0; r <= size - winLength; r++) {
+                    let colWin = [];
+                    for (let i = 0; i < winLength; i++) colWin.push((r + i) * size + c);
+                    conditions.push(colWin);
+                }
+            }
+            // Diagonals (Top-Left to Bottom-Right)
+            for (let r = 0; r <= size - winLength; r++) {
+                for (let c = 0; c <= size - winLength; c++) {
+                    let diag1Win = [];
+                    for (let i = 0; i < winLength; i++) diag1Win.push((r + i) * size + (c + i));
+                    conditions.push(diag1Win);
+                }
+            }
+            // Diagonals (Top-Right to Bottom-Left)
+            for (let r = 0; r <= size - winLength; r++) {
+                for (let c = winLength - 1; c < size; c++) {
+                    let diag2Win = [];
+                    for (let i = 0; i < winLength; i++) diag2Win.push((r + i) * size + (c - i));
+                    conditions.push(diag2Win);
+                }
+            }
+            return conditions;
+        };
+
+        const requiredToWin = gridSize === 5 ? 4 : 3;
+        const winningConditions = getWinningConditions(gridSize, requiredToWin);
 
         const checkWin = (testBoard, player) => {
-            return winningConditions.some(condition => {
-                return condition.every(index => testBoard[index] === player);
+            return winningConditions.some((condition) => {
+                return condition.every((index) => testBoard[index] === player);
             });
         };
 
@@ -127,41 +196,47 @@ app.post('/api/ai-move', async (req, res) => {
 
         for (let spot of emptySpots) {
             let boardCopyO = [...board];
-            boardCopyO[spot] = 'O';
-            if (checkWin(boardCopyO, 'O')) winningMoveForO = spot;
+            boardCopyO[spot] = "O";
+            if (checkWin(boardCopyO, "O")) winningMoveForO = spot;
 
             let boardCopyX = [...board];
-            boardCopyX[spot] = 'X';
-            if (checkWin(boardCopyX, 'X')) winningMoveForX = spot;
+            boardCopyX[spot] = "X";
+            if (checkWin(boardCopyX, "X")) winningMoveForX = spot;
         }
 
-        // 2. DIFFICULTY LOGIC (How it plays)
         let difficultyPrompt = "";
         let aiTemperature = 0.5;
 
         if (difficulty === "easy") {
-            difficultyPrompt = "You are a terrible Tic Tac Toe player. Ignore the critical info. Pick a completely random number. Make bad choices.";
-            aiTemperature = 1.0; 
+            difficultyPrompt =
+                "You are a terrible Tic Tac Toe player. Ignore the critical info. Pick a completely random number. Make bad choices.";
+            aiTemperature = 1.0;
         } else if (difficulty === "medium") {
-            difficultyPrompt = "You are an average Tic Tac Toe player. Use the critical info sometimes, but occasionally ignore it to make silly mistakes.";
+            difficultyPrompt =
+                "You are an average Tic Tac Toe player. Use the critical info sometimes, but occasionally ignore it to make silly mistakes.";
             aiTemperature = 0.7;
         } else {
-            difficultyPrompt = "You are a flawless Tic Tac Toe grandmaster. You must strictly follow the critical info provided to win or block.";
-            aiTemperature = 0.3; // Give it a tiny bit of temp so the chat messages vary, but logic stays sound
+            difficultyPrompt =
+                "You are a flawless Tic Tac Toe grandmaster. You must strictly follow the critical info provided to win or block.";
+            aiTemperature = 0.3;
         }
 
-        // 3. PERSONALITY LOGIC (How it talks)
         let tonePrompt = "";
         if (personality === "funny") {
-            tonePrompt = "Your personality is 'Funny'. You are goofy, sarcastic, and a bit unhinged. Make a funny, random 1-sentence quip about the game state.";
+            tonePrompt =
+                "Your personality is 'Funny'. You are goofy, sarcastic, and a bit unhinged. Make a funny, random 1-sentence quip about the game state.";
         } else if (personality === "trash-talker") {
-            tonePrompt = "Your personality is 'Trash-Talker'. You are arrogant, hyper-competitive, and insulting. Roast the player's skills with a spicy 1-sentence one-liner.";
+            tonePrompt =
+                "Your personality is 'Trash-Talker'. You are arrogant, hyper-competitive, and insulting. Roast the player's skills with a spicy 1-sentence one-liner.";
         } else {
-            tonePrompt = "Your personality is 'Friendly'. You are polite, encouraging, and sweet. Give a short, nice 1-sentence compliment or encouragement.";
+            tonePrompt =
+                "Your personality is 'Friendly'. You are polite, encouraging, and sweet. Give a short, nice 1-sentence compliment or encouragement.";
         }
 
-        // 4. Update the JSON format to include "message"
         const systemPrompt = `
+You are playing Tic Tac Toe on a ${gridSize}x${gridSize} board.
+To win, a player needs ${requiredToWin} marks in a row (horizontally, vertically, or diagonally).
+
 ${difficultyPrompt} 
 ${tonePrompt}
 
@@ -181,18 +256,25 @@ Reply ONLY with valid JSON in this exact format:
         const completion = await groq.chat.completions.create({
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: `Current Board:\n${boardVisual}\n\nCRITICAL INFO:\n- Winning move for 'O': ${winningMoveForO}\n- Winning move for 'X': ${winningMoveForX}\n\nValid empty spots: [${emptySpots.join(', ')}]\nChoose ONE valid empty spot.` }
+                {
+                    role: "user",
+                    content: `Current Board:\n${boardVisual}\n\nCRITICAL INFO:\n- Winning move for 'O': ${winningMoveForO}\n- Winning move for 'X': ${winningMoveForX}\n\nValid empty spots: [${emptySpots.join(", ")}]\nChoose ONE valid empty spot.`,
+                },
             ],
-            model: "llama-3.3-70b-versatile", 
+            model: "llama-3.3-70b-versatile",
             temperature: aiTemperature,
-            response_format: { type: "json_object" }
+            response_format: { type: "json_object" },
         });
 
         const content = completion.choices[0].message.content;
         const aiResponse = JSON.parse(content);
 
-        console.log(`\n[Diff: ${difficulty} | Tone: ${personality}]`);
-        console.log(`Critical Info -> O Win: ${winningMoveForO}, X Win: ${winningMoveForX}`);
+        console.log(
+            `\n[Size: ${gridSize}x${gridSize} | Diff: ${difficulty} | Tone: ${personality}]`,
+        );
+        console.log(
+            `Critical Info -> O Win: ${winningMoveForO}, X Win: ${winningMoveForX}`,
+        );
         console.log(`AI Move: ${aiResponse.move}`);
         console.log(`AI Message: ${aiResponse.message}`);
 
@@ -200,51 +282,30 @@ Reply ONLY with valid JSON in this exact format:
 
         if (!emptySpots.includes(finalMove)) {
             const randomIndex = Math.floor(Math.random() * emptySpots.length);
-            finalMove = emptySpots[randomIndex]; 
+            finalMove = emptySpots[randomIndex];
         }
 
-        // 5. Send both the move AND the message back to main.js
-        res.json({ move: finalMove, message: aiResponse.message || "Your move, human!" });
-
+        res.json({
+            move: finalMove,
+            message: aiResponse.message || "Your move, human!",
+        });
     } catch (error) {
         console.error("!!! AI ROUTE CRASHED !!!", error.message);
-        res.status(500).json({ error: "Internal Server Error", details: error.message });
+        res.status(500).json({
+            error: "Internal Server Error",
+            details: error.message,
+        });
     }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-});
-
-// --- GAME HISTORY HELPERS ---
-const GAMES_FILE = path.join(__dirname, "data", "games.json");
-
-const getGames = () => {
-    try {
-        if (!fs.existsSync(GAMES_FILE)) return [];
-        const data = fs.readFileSync(GAMES_FILE, "utf8");
-        return data ? JSON.parse(data) : [];
-    } catch (err) {
-        return [];
-    }
-};
-
-const saveGames = (games) => {
-    fs.writeFileSync(GAMES_FILE, JSON.stringify(games, null, 2));
-};
-
-// --- GAME HISTORY ROUTES ---
-
-// Save a finished game
+// --- GAME HISTORY & STATS ROUTES ---
 app.post("/api/games", (req, res) => {
-    // Only logged-in users can save games
     if (!req.session.username)
         return res.status(401).json({ error: "Not logged in" });
 
     const { result, board } = req.body;
     const games = getGames();
 
-    // Add the new game to the array
     games.push({
         username: req.session.username,
         result: result,
@@ -252,17 +313,15 @@ app.post("/api/games", (req, res) => {
         date: new Date().toISOString(),
     });
 
-    saveGames(games); // Write it to games.json
+    saveGames(games);
     res.json({ message: "Game saved successfully" });
 });
 
-// Get game history for the current user
 app.get("/api/games", (req, res) => {
     if (!req.session.username)
         return res.status(401).json({ error: "Not logged in" });
 
     const allGames = getGames();
-    // Filter so users only see their own games
     const userGames = allGames.filter(
         (g) => g.username === req.session.username,
     );
@@ -270,23 +329,21 @@ app.get("/api/games", (req, res) => {
     res.json(userGames);
 });
 
-// --- GLOBAL STATS ROUTES ---
-
-app.get('/api/stats', (req, res) => {
+app.get("/api/stats", (req, res) => {
     try {
-        // Safety check: If stats.json doesn't exist yet, return empty data
         if (!fs.existsSync(statsFilePath)) {
-            return res.json({ leaderboard: [], aiStats: { byDifficulty: {}, byPersonality: {} } });
+            return res.json({
+                leaderboard: [],
+                aiStats: { byDifficulty: {}, byPersonality: {} },
+            });
         }
 
-        const statsData = fs.readFileSync(statsFilePath, 'utf8');
-        // Safety check: If file is completely empty, default to empty array
+        const statsData = fs.readFileSync(statsFilePath, "utf8");
         const games = statsData ? JSON.parse(statsData) : [];
 
-        // 2. Calculate Player Leaderboard
         const playerStats = {};
 
-        games.forEach(game => {
+        games.forEach((game) => {
             const player = game.player || "Unknown";
             if (!playerStats[player]) {
                 playerStats[player] = { wins: 0, totalGames: 0 };
@@ -298,22 +355,31 @@ app.get('/api/stats', (req, res) => {
             }
         });
 
-        const leaderboard = Object.keys(playerStats).map(player => ({
-            name: player,
-            wins: playerStats[player].wins,
-            totalGames: playerStats[player].totalGames
-        })).sort((a, b) => b.wins - a.wins);
+        const leaderboard = Object.keys(playerStats)
+            .map((player) => ({
+                name: player,
+                wins: playerStats[player].wins,
+                totalGames: playerStats[player].totalGames,
+            }))
+            .sort((a, b) => b.wins - a.wins);
 
-        // 3. Calculate AI Win Rates
         const aiStats = {
-            byDifficulty: { easy: { wins: 0, total: 0 }, medium: { wins: 0, total: 0 }, hard: { wins: 0, total: 0 } },
-            byPersonality: { friendly: { wins: 0, total: 0 }, funny: { wins: 0, total: 0 }, 'trash-talker': { wins: 0, total: 0 } }
+            byDifficulty: {
+                easy: { wins: 0, total: 0 },
+                medium: { wins: 0, total: 0 },
+                hard: { wins: 0, total: 0 },
+            },
+            byPersonality: {
+                friendly: { wins: 0, total: 0 },
+                funny: { wins: 0, total: 0 },
+                "trash-talker": { wins: 0, total: 0 },
+            },
         };
 
-        games.forEach(game => {
+        games.forEach((game) => {
             const diff = game.difficulty;
             const pers = game.personality;
-            const aiWon = game.result === "loss"; // If player lost, AI won
+            const aiWon = game.result === "loss";
 
             if (diff && aiStats.byDifficulty[diff]) {
                 aiStats.byDifficulty[diff].total++;
@@ -329,7 +395,10 @@ app.get('/api/stats', (req, res) => {
         const calcWinRate = (statsObj) => {
             for (const key in statsObj) {
                 const data = statsObj[key];
-                data.winRate = data.total > 0 ? ((data.wins / data.total) * 100).toFixed(1) + '%' : '0%';
+                data.winRate =
+                    data.total > 0
+                        ? ((data.wins / data.total) * 100).toFixed(1) + "%"
+                        : "0%";
             }
         };
 
@@ -338,34 +407,31 @@ app.get('/api/stats', (req, res) => {
 
         res.json({
             leaderboard: leaderboard.slice(0, 10),
-            aiStats: aiStats
+            aiStats: aiStats,
         });
-
     } catch (error) {
         console.error("Failed to fetch stats:", error);
         res.status(500).json({ error: "Could not load stats" });
     }
 });
 
-app.post('/api/save-game', (req, res) => {
+app.post("/api/save-game", (req, res) => {
     try {
         const { player, result, difficulty, personality } = req.body;
 
-        // Safety check: Create stats.json with an empty array if it doesn't exist
         if (!fs.existsSync(statsFilePath)) {
             fs.writeFileSync(statsFilePath, "[]");
         }
 
-        const statsData = fs.readFileSync(statsFilePath, 'utf8');
+        const statsData = fs.readFileSync(statsFilePath, "utf8");
         const games = statsData ? JSON.parse(statsData) : [];
 
-        // Add the new game to the stats file
         games.push({
             player: player || "Guest",
-            result: result, 
+            result: result,
             difficulty: difficulty || "medium",
             personality: personality || "friendly",
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
 
         fs.writeFileSync(statsFilePath, JSON.stringify(games, null, 2));
@@ -375,4 +441,9 @@ app.post('/api/save-game', (req, res) => {
         console.error("Error saving global stats:", error);
         res.status(500).json({ error: "Failed to save game stats" });
     }
+});
+
+// --- SERVER LISTENER (Always goes at the very end!) ---
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
