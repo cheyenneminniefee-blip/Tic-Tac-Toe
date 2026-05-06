@@ -153,13 +153,13 @@ function generateWinningConditions(size, winLength) {
   return conditions;
 }
 
-
 function initBoard() {
-  // Add these lines inside initBoard(), right under gameActive = true;
   p1ScrambleUsed = false;
   p2ScrambleUsed = false;
+  isAiThinking = false; // <-- Add this line for safety
   scrambleBtn.disabled = false;
   scrambleBtn.innerText = "Scramble Board (1 Use)";
+
   // Check if ultra-hard is selected
   gridSize = aiDifficultySelect.value === "ultra" ? 5 : 3;
 
@@ -214,56 +214,60 @@ function handleCellClick(e) {
 }
 
 function checkResult() {
-    let winningPlayer = null; // Track WHO actually won
+  let winningPlayer = null; // Track WHO actually won
 
-    for (let condition of winningConditions) {
-        const firstCell = boardState[condition[0]];
-        if (firstCell === "") continue;
+  for (let condition of winningConditions) {
+    const firstCell = boardState[condition[0]];
+    if (firstCell === "") continue;
 
-        if (condition.every(index => boardState[index] === firstCell)) {
-            winningPlayer = firstCell;
-            break;
-        }
+    if (condition.every((index) => boardState[index] === firstCell)) {
+      winningPlayer = firstCell;
+      break;
     }
+  }
 
-    if (winningPlayer) {
-        turnIndicator.innerText = `Player ${winningPlayer} Wins!`;
-        turnIndicator.style.color = "green";
-        gameActive = false;
-        saveGameResult(`Player ${winningPlayer} Wins`);
-        // If human is X and won, it's a win. If human is X and O won, it's a loss.
-        saveGameRecord(winningPlayer === "X" ? "win" : "loss");
-        return;
-    }
+  if (winningPlayer) {
+    turnIndicator.innerText = `Player ${winningPlayer} Wins!`;
+    turnIndicator.style.color = "green";
+    gameActive = false;
+    saveGameResult(`Player ${winningPlayer} Wins`);
+    // If human is X and won, it's a win. If human is X and O won, it's a loss.
+    saveGameRecord(winningPlayer === "X" ? "win" : "loss");
+    return;
+  }
 
-    let roundDraw = !boardState.includes("");
-    if (roundDraw) {
-        turnIndicator.innerText = "Game ended in a draw!";
-        turnIndicator.style.color = "orange";
-        gameActive = false;
-        saveGameResult("Draw");
-        saveGameRecord("draw");
-        return;
-    }
+  let roundDraw = !boardState.includes("");
+  if (roundDraw) {
+    turnIndicator.innerText = "Game ended in a draw!";
+    turnIndicator.style.color = "orange";
+    gameActive = false;
+    saveGameResult("Draw");
+    saveGameRecord("draw");
+    return;
+  }
 
-    // Switch turns
-    currentPlayer = currentPlayer === "X" ? "O" : "X";
-    turnIndicator.innerText = `Player ${currentPlayer}'s Turn`;
+  // Switch turns
+  currentPlayer = currentPlayer === "X" ? "O" : "X";
+  turnIndicator.innerText = `Player ${currentPlayer}'s Turn`;
 
-    // Update Scramble button UI for the next player
-    if (currentPlayer === "X") {
-        scrambleBtn.disabled = p1ScrambleUsed;
-        scrambleBtn.innerText = p1ScrambleUsed ? "Scramble Used" : "Scramble Board (1 Use)";
-    } else if (gameModeSelect.value === "human") {
-        scrambleBtn.disabled = p2ScrambleUsed;
-        scrambleBtn.innerText = p2ScrambleUsed ? "Scramble Used" : "Scramble Board (1 Use)";
-    } else {
-        scrambleBtn.disabled = true; // Disable human clicking it during AI turn
-    }
+  // Update Scramble button UI for the next player
+  if (currentPlayer === "X") {
+    scrambleBtn.disabled = p1ScrambleUsed;
+    scrambleBtn.innerText = p1ScrambleUsed
+      ? "Scramble Used"
+      : "Scramble Board (1 Use)";
+  } else if (gameModeSelect.value === "human") {
+    scrambleBtn.disabled = p2ScrambleUsed;
+    scrambleBtn.innerText = p2ScrambleUsed
+      ? "Scramble Used"
+      : "Scramble Board (1 Use)";
+  } else {
+    scrambleBtn.disabled = true; // Disable human clicking it during AI turn
+  }
 
-    if (gameActive && gameModeSelect.value === "ai" && currentPlayer === "O") {
-        makeAiMove();
-    }
+  if (gameActive && gameModeSelect.value === "ai" && currentPlayer === "O") {
+    makeAiMove();
+  }
 }
 
 resetBtn.addEventListener("click", initBoard);
@@ -274,58 +278,43 @@ initBoard();
 
 // --- NEW: Board Scrambler Logic ---
 scrambleBtn.addEventListener("click", () => {
-    if (!gameActive || isAiThinking) return;
+  if (!gameActive || isAiThinking) return;
 
-    // Check if current player already used it
-    if (currentPlayer === "X" && p1ScrambleUsed) return;
-    if (currentPlayer === "O" && p2ScrambleUsed) return;
+  // Check if current player already used it
+  if (currentPlayer === "X" && p1ScrambleUsed) return;
+  if (currentPlayer === "O" && p2ScrambleUsed) return;
 
-    // Mark as used for the current player
-    if (currentPlayer === "X") p1ScrambleUsed = true;
-    if (currentPlayer === "O") p2ScrambleUsed = true;
+  // Mark as used for the current player
+  if (currentPlayer === "X") p1ScrambleUsed = true;
+  if (currentPlayer === "O") p2ScrambleUsed = true;
 
-    executeScramble();
+  executeScramble();
 });
 
 function executeScramble() {
-    // 1. Shuffle the boardState array (Fisher-Yates Shuffle)
-    for (let i = boardState.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [boardState[i], boardState[j]] = [boardState[j], boardState[i]];
+  // 1. Shuffle the boardState array (Fisher-Yates Shuffle)
+  for (let i = boardState.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [boardState[i], boardState[j]] = [boardState[j], boardState[i]];
+  }
+
+  // 2. Re-render the HTML board to match the new state
+  const cells = document.querySelectorAll(".cell");
+  cells.forEach((cell, i) => {
+    cell.innerText = boardState[i];
+    cell.className = "cell"; // Clear old classes
+    if (boardState[i] !== "") {
+      cell.classList.add(boardState[i].toLowerCase());
     }
-
-    // 2. Re-render the HTML board to match the new state
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach((cell, i) => {
-        cell.innerText = boardState[i];
-        cell.className = "cell"; // Clear old classes
-        if (boardState[i] !== "") {
-            cell.classList.add(boardState[i].toLowerCase());
-        }
-    });
-
-    // 3. Update button UI
-    scrambleBtn.disabled = true;
-    scrambleBtn.innerText = "Scramble Used";
-
-    // 4. Check for accidental wins and pass the turn
-    checkResult();
-}
-
-// Reset the board to play again
-resetBtn.addEventListener("click", () => {
-  currentPlayer = "X";
-  gameActive = true;
-  boardState = ["", "", "", "", "", "", "", "", ""];
-
-  turnIndicator.innerText = `Player X's Turn`;
-  turnIndicator.style.color = "black";
-
-  cells.forEach((cell) => {
-    cell.innerText = "";
-    cell.classList.remove("x", "o"); // Remove classes on reset
   });
-});
+
+  // 3. Update button UI
+  scrambleBtn.disabled = true;
+  scrambleBtn.innerText = "Scramble Used";
+
+  // 4. Check for accidental wins and pass the turn
+  checkResult();
+}
 
 async function saveGameResult(resultMessage) {
   await fetch("/api/games", {
@@ -398,7 +387,7 @@ async function makeAiMove() {
         board: boardState,
         difficulty: aiDifficultySelect.value,
         personality: aiPersonalitySelect.value,
-        aiCanScramble: !p2ScrambleUsed // <-- TELL THE SERVER IF AI CAN SCRAMBLE
+        aiCanScramble: !p2ScrambleUsed, // <-- TELL THE SERVER IF AI CAN SCRAMBLE
       }),
     });
 
@@ -411,10 +400,10 @@ async function makeAiMove() {
 
     // <-- NEW: Handle if the AI decides to scramble
     if (data.action === "scramble") {
-        p2ScrambleUsed = true;
-        executeScramble();
-        isAiThinking = false;
-        return; // executeScramble handles the turn passing
+      p2ScrambleUsed = true;
+      executeScramble();
+      isAiThinking = false;
+      return; // executeScramble handles the turn passing
     }
 
     // Update the board normally if not scrambling
