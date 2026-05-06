@@ -47,5 +47,19 @@
     "difficulty": "ultra",
     "personality": "trash-talker",
     "timestamp": "2026-05-05T18:00:42.396Z"
+  },
+  {
+    "player": "clm",
+    "result": "loss",
+    "difficulty": "medium",
+    "personality": "friendly",
+    "timestamp": "2026-05-06T17:32:54.083Z"
+  },
+  {
+    "player": "clm",
+    "result": "win",
+    "difficulty": "ultra",
+    "personality": "trash-talker",
+    "timestamp": "2026-05-06T17:35:56.281Z"
   }
 ]

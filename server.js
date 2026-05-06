@@ -151,7 +151,8 @@ app.post("/api/ai-move", async (req, res) => {
             for (let r = 0; r < size; r++) {
                 for (let c = 0; c <= size - winLength; c++) {
                     let rowWin = [];
-                    for (let i = 0; i < winLength; i++) rowWin.push(r * size + (c + i));
+                    for (let i = 0; i < winLength; i++)
+                        rowWin.push(r * size + (c + i));
                     conditions.push(rowWin);
                 }
             }
@@ -159,7 +160,8 @@ app.post("/api/ai-move", async (req, res) => {
             for (let c = 0; c < size; c++) {
                 for (let r = 0; r <= size - winLength; r++) {
                     let colWin = [];
-                    for (let i = 0; i < winLength; i++) colWin.push((r + i) * size + c);
+                    for (let i = 0; i < winLength; i++)
+                        colWin.push((r + i) * size + c);
                     conditions.push(colWin);
                 }
             }
@@ -167,7 +169,8 @@ app.post("/api/ai-move", async (req, res) => {
             for (let r = 0; r <= size - winLength; r++) {
                 for (let c = 0; c <= size - winLength; c++) {
                     let diag1Win = [];
-                    for (let i = 0; i < winLength; i++) diag1Win.push((r + i) * size + (c + i));
+                    for (let i = 0; i < winLength; i++)
+                        diag1Win.push((r + i) * size + (c + i));
                     conditions.push(diag1Win);
                 }
             }
@@ -175,7 +178,8 @@ app.post("/api/ai-move", async (req, res) => {
             for (let r = 0; r <= size - winLength; r++) {
                 for (let c = winLength - 1; c < size; c++) {
                     let diag2Win = [];
-                    for (let i = 0; i < winLength; i++) diag2Win.push((r + i) * size + (c - i));
+                    for (let i = 0; i < winLength; i++)
+                        diag2Win.push((r + i) * size + (c - i));
                     conditions.push(diag2Win);
                 }
             }
@@ -192,7 +196,7 @@ app.post("/api/ai-move", async (req, res) => {
         };
 
         let winningMoveForO = "None";
-        let winningMoveForX = "None";
+        let winningMovesForX = []; // Track ALL winning moves for X to detect forks
 
         for (let spot of emptySpots) {
             let boardCopyO = [...board];
@@ -201,8 +205,10 @@ app.post("/api/ai-move", async (req, res) => {
 
             let boardCopyX = [...board];
             boardCopyX[spot] = "X";
-            if (checkWin(boardCopyX, "X")) winningMoveForX = spot;
+            if (checkWin(boardCopyX, "X")) winningMovesForX.push(spot);
         }
+
+        const aiCanScramble = req.body.aiCanScramble;
 
         let difficultyPrompt = "";
         let aiTemperature = 0.5;
@@ -234,31 +240,36 @@ app.post("/api/ai-move", async (req, res) => {
         }
 
         const systemPrompt = `
-You are playing Tic Tac Toe on a ${gridSize}x${gridSize} board.
-To win, a player needs ${requiredToWin} marks in a row (horizontally, vertically, or diagonally).
+        You are playing Tic Tac Toe on a ${gridSize}x${gridSize} board.
+        To win, a player needs ${requiredToWin} marks in a row (horizontally, vertically, or diagonally).
 
-${difficultyPrompt} 
-${tonePrompt}
+        ${difficultyPrompt} 
+        ${tonePrompt}
 
-You MUST follow this exact 3-step thought process based on the Critical Info:
-1. WIN: If the Critical Info says 'O' has a winning move, YOU MUST CHOOSE THAT NUMBER.
-2. BLOCK: If the Critical Info says 'X' has a winning move, YOU MUST CHOOSE THAT NUMBER to block them.
-3. STRATEGY: If there are no immediate wins or blocks, pick the best strategic empty spot.
+        You have a special "scramble" ability that randomly redistributes all pieces. You can only use it ONCE per game.
+        Can you scramble right now? ${aiCanScramble ? "YES" : "NO"}
 
-Reply ONLY with valid JSON in this exact format: 
-{
-  "thinking": "Explain your step 1, 2, and 3 logic", 
-  "move": number,
-  "message": "Write your 1-sentence chat message to the human here based on your assigned personality."
-}
-        `;
+        You MUST follow this exact thought process based on the Critical Info:
+        1. WIN: If 'O' has a winning move, YOU MUST CHOOSE THAT NUMBER.
+        2. ESCAPE FORK: If 'X' has MULTIPLE winning moves (a fork), you cannot block them all. If you can scramble (YES), you MUST return "scramble" as your action to save yourself.
+        3. BLOCK: If 'X' has exactly ONE winning move, YOU MUST CHOOSE THAT NUMBER to block them.
+        4. STRATEGY: If none of the above apply, pick the best strategic empty spot.
+
+        Reply ONLY with valid JSON in this exact format: 
+        {
+          "thinking": "Explain your logic", 
+          "action": "move" or "scramble",
+          "move": number (or null if action is scramble),
+          "message": "Write your 1-sentence chat message to the human here based on your assigned personality."
+        }
+                `;
 
         const completion = await groq.chat.completions.create({
             messages: [
                 { role: "system", content: systemPrompt },
                 {
                     role: "user",
-                    content: `Current Board:\n${boardVisual}\n\nCRITICAL INFO:\n- Winning move for 'O': ${winningMoveForO}\n- Winning move for 'X': ${winningMoveForX}\n\nValid empty spots: [${emptySpots.join(", ")}]\nChoose ONE valid empty spot.`,
+                    content: `Current Board:\n${boardVisual}\n\nCRITICAL INFO:\n- Winning move for 'O': ${winningMoveForO}\n- Winning move for 'X': ${winningMovesForX}\n\nValid empty spots: [${emptySpots.join(", ")}]\nChoose ONE valid empty spot.`,
                 },
             ],
             model: "llama-3.3-70b-versatile",
@@ -269,23 +280,25 @@ Reply ONLY with valid JSON in this exact format:
         const content = completion.choices[0].message.content;
         const aiResponse = JSON.parse(content);
 
-        console.log(
-            `\n[Size: ${gridSize}x${gridSize} | Diff: ${difficulty} | Tone: ${personality}]`,
-        );
-        console.log(
-            `Critical Info -> O Win: ${winningMoveForO}, X Win: ${winningMoveForX}`,
-        );
-        console.log(`AI Move: ${aiResponse.move}`);
-        console.log(`AI Message: ${aiResponse.message}`);
+        // NEW: Check if AI decided to scramble
+        if (aiResponse.action === "scramble" && aiCanScramble) {
+            console.log(`AI used SCRAMBLE! Message: ${aiResponse.message}`);
+            return res.json({
+                action: "scramble",
+                message: aiResponse.message || "PANIC! SCRAMBLING THE BOARD!",
+            });
+        }
 
         let finalMove = parseInt(aiResponse.move, 10);
 
+        // ... fallback logic and final res.json() stay the same
         if (!emptySpots.includes(finalMove)) {
             const randomIndex = Math.floor(Math.random() * emptySpots.length);
             finalMove = emptySpots[randomIndex];
         }
 
         res.json({
+            action: "move",
             move: finalMove,
             message: aiResponse.message || "Your move, human!",
         });
