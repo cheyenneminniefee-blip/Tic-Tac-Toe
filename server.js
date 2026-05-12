@@ -375,12 +375,13 @@ app.get("/api/stats", (req, res) => {
                 totalGames: playerStats[player].totalGames,
             }))
             .sort((a, b) => b.wins - a.wins);
-
+        // Inside app.get("/api/stats", ...)
         const aiStats = {
             byDifficulty: {
                 easy: { wins: 0, total: 0 },
                 medium: { wins: 0, total: 0 },
                 hard: { wins: 0, total: 0 },
+                ultra: { wins: 0, total: 0 }, // <-- ADD THIS LINE
             },
             byPersonality: {
                 friendly: { wins: 0, total: 0 },
@@ -454,6 +455,13 @@ app.post("/api/save-game", (req, res) => {
         console.error("Error saving global stats:", error);
         res.status(500).json({ error: "Failed to save game stats" });
     }
+});
+// --- NEW: Global Game History Route ---
+app.get("/api/all-games", (req, res) => {
+    // We don't check for req.session.username here because 
+    // we want this list to be public for the global stats page.
+    const allGames = getGames(); 
+    res.json(allGames);
 });
 
 // --- SERVER LISTENER (Always goes at the very end!) ---

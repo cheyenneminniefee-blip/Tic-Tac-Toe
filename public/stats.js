@@ -25,9 +25,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // 2. Render AI Difficulty Stats
+        // Inside stats.js, within the Render AI Difficulty Stats section
         const diffBody = document.getElementById('ai-difficulty-body');
         diffBody.innerHTML = '';
-        const diffs = ['easy', 'medium', 'hard'];
+        const diffs = ['easy', 'medium', 'hard', 'ultra']; // <-- ADD 'ultra' HERE
 
         diffs.forEach(level => {
             const stats = data.aiStats.byDifficulty[level];
@@ -57,5 +58,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
         console.error("Error fetching stats:", error);
         document.getElementById('leaderboard-body').innerHTML = '<tr><td colspan="4" style="color: red;">Error loading stats data.</td></tr>';
+    }
+
+    // --- 4. Render Global Game Feed ---
+    const globalResponse = await fetch('/api/all-games');
+    if (globalResponse.ok) {
+        const allGames = await globalResponse.json();
+        const globalBody = document.getElementById('global-games-body');
+        globalBody.innerHTML = ''; // Clear loading text
+
+        if (allGames.length === 0) {
+            globalBody.innerHTML = '<tr><td colspan="3">No games played globally yet!</td></tr>';
+        } else {
+            // Show newest games first
+            allGames.reverse().forEach(game => {
+                const row = `<tr>
+                    <td>${new Date(game.date).toLocaleString()}</td>
+                    <td><strong>${game.username}</strong></td>
+                    <td>${game.result}</td>
+                </tr>`;
+                globalBody.innerHTML += row;
+            });
+        }
     }
 });

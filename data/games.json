@@ -1,146 +1,18 @@
 [
   {
     "username": "clm",
-    "result": "Player X Wins",
+    "result": "Player O Wins",
     "board": [
       "O",
       "",
-      "X",
       "",
-      "O",
-      "X",
       "X",
       "O",
-      "X"
-    ],
-    "date": "2026-05-01T18:02:19.582Z"
-  },
-  {
-    "username": "clm",
-    "result": "Draw",
-    "board": [
-      "O",
-      "X",
-      "X",
-      "X",
-      "O",
-      "O",
-      "O",
-      "X",
-      "X"
-    ],
-    "date": "2026-05-01T18:32:06.079Z"
-  },
-  {
-    "username": "clm",
-    "result": "Draw",
-    "board": [
-      "X",
-      "X",
-      "O",
-      "O",
-      "O",
-      "X",
+      "",
       "X",
       "X",
       "O"
     ],
-    "date": "2026-05-01T18:36:09.976Z"
-  },
-  {
-    "username": "clm",
-    "result": "Player O Wins",
-    "board": [
-      "X",
-      "",
-      "",
-      "O",
-      "O",
-      "O",
-      "X",
-      "",
-      "X"
-    ],
-    "date": "2026-05-04T17:59:37.713Z"
-  },
-  {
-    "username": "clm",
-    "result": "Player O Wins",
-    "board": [
-      "X",
-      "O",
-      "X",
-      "",
-      "O",
-      "",
-      "",
-      "O",
-      "X"
-    ],
-    "date": "2026-05-04T18:13:54.456Z"
-  },
-  {
-    "username": "clm",
-    "result": "Player X Wins",
-    "board": [
-      "X",
-      "X",
-      "X",
-      "",
-      "",
-      "O",
-      "",
-      "O",
-      ""
-    ],
-    "date": "2026-05-05T17:41:26.098Z"
-  },
-  {
-    "username": "clm",
-    "result": "Draw",
-    "board": [
-      "X",
-      "O",
-      "X",
-      "X",
-      "O",
-      "O",
-      "O",
-      "X",
-      "X"
-    ],
-    "date": "2026-05-05T17:54:59.613Z"
-  },
-  {
-    "username": "clm",
-    "result": "Player O Wins",
-    "board": [
-      "",
-      "X",
-      "O",
-      "X",
-      "O",
-      "",
-      "O",
-      "O",
-      "X"
-    ],
-    "date": "2026-05-06T17:32:54.082Z"
-  },
-  {
-    "username": "clm",
-    "result": "Draw",
-    "board": [
-      "X",
-      "O",
-      "X",
-      "O",
-      "O",
-      "X",
-      "O",
-      "X",
-      "O"
-    ],
-    "date": "2026-05-06T17:40:51.070Z"
+    "date": "2026-05-12T17:39:49.531Z"
   }
 ]

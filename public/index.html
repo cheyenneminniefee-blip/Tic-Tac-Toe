@@ -13,10 +13,12 @@
             <h2>Login or Register</h2>
             <input type="text" id="username" placeholder="Username" />
             <input type="password" id="password" placeholder="Password" />
+
             <div class="button-group">
                 <button id="login-btn">Login</button>
                 <button id="register-btn">Register</button>
             </div>
+
             <p id="auth-message"></p>
         </div>
 
@@ -74,19 +76,26 @@
                     AI says: "Let's play!"
                 </div>
             </div>
-            <div
-                id="history-section"
-                style="
-                    margin-top: 30px;
-                    border-top: 2px solid #ccc;
-                    padding-top: 15px;
-                "
-            >
-                <h3>Your Game History</h3>
-                <ul
-                    id="history-list"
-                    style="list-style-type: none; padding: 0"
-                ></ul>
+        <div id="history-section" style="margin-top: 30px; border-top: 2px solid #334155; padding-top: 20px;">
+            <h3 style="color: #fca311; margin-bottom: 15px;">Your Game History</h3>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Result</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="history-list-body">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="replay-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2 style="color: #fca311; margin-bottom: 15px;">Final Board State</h2>
+                <div id="replay-board-container"></div>
             </div>
         </div>
 

@@ -328,21 +328,69 @@ async function saveGameResult(resultMessage) {
   loadGameHistory(); // Automatically refresh the UI after saving
 }
 
+// 1. Function to show the saved board in a pop-up
+function showReplay(boardData) {
+    const modal = document.getElementById("replay-modal");
+    const container = document.getElementById("replay-board-container");
+
+    // Determine grid size (3 for 9 cells, 5 for 25 cells)
+    const size = Math.sqrt(boardData.length);
+
+    container.innerHTML = "";
+    container.style.gridTemplateColumns = `repeat(${size}, 60px)`; // Smaller cells for replay
+
+    boardData.forEach(mark => {
+        const cell = document.createElement("div");
+        cell.className = `cell ${mark.toLowerCase()}`;
+        cell.style.width = "60px";
+        cell.style.height = "60px";
+        cell.style.fontSize = "1.5rem";
+        cell.innerText = mark;
+        container.appendChild(cell);
+    });
+
+    modal.style.display = "grid";
+}
+
+// 2. Update loadGameHistory to use the Table and "View" button
 async function loadGameHistory() {
   const res = await fetch("/api/games");
   if (res.ok) {
     const history = await res.json();
-    const historyList = document.getElementById("history-list");
-    historyList.innerHTML = ""; // Clear old list
+    const historyBody = document.getElementById("history-list-body");
+    historyBody.innerHTML = ""; 
 
-    history.forEach((game) => {
-      const li = document.createElement("li");
-      li.style.padding = "5px 0";
-      li.innerText = `${new Date(game.date).toLocaleString()} - ${game.result}`;
-      historyList.appendChild(li);
+    history.reverse().forEach((game) => {
+      const row = document.createElement("tr");
+
+      // Date and Result columns
+      const dateStr = new Date(game.date).toLocaleString();
+
+      row.innerHTML = `
+        <td>${dateStr}</td>
+        <td>${game.result}</td>
+        <td><button class="view-btn" style="padding: 5px 10px; cursor: pointer;">View Board</button></td>
+      `;
+
+      // Add click event specifically for this game's board
+      row.querySelector(".view-btn").addEventListener("click", () => {
+          showReplay(game.board);
+      });
+
+      historyBody.appendChild(row);
     });
   }
 }
+
+// 3. Close modal logic
+document.querySelector(".close-modal").onclick = () => {
+    document.getElementById("replay-modal").style.display = "none";
+};
+
+window.onclick = (event) => {
+    const modal = document.getElementById("replay-modal");
+    if (event.target == modal) modal.style.display = "none";
+};
 
 async function saveGameRecord(gameResult) {
   try {
